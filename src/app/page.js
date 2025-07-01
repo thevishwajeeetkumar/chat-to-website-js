@@ -2,32 +2,59 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import FeatureSection from "./components/FeatureSection";
 import HowItWorks from "./components/HowItWorks";
 import PricingSection from "./components/PricingSection";
 import TestimonialGrid from "./components/TestimonialGrid";
 import FAQSection from "./components/FAQSection";
-import Link from "next/link";
 
 export default function Landing() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
-    const hasToken = document.cookie.includes("accessToken");
-    setIsAuthenticated(hasToken);
+    setIsAuthenticated(document.cookie.includes("accessToken"));
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#0F172A] text-[#F1F5F9]">
-      
-      {/* 🔷 TOP NAVBAR */}
-      <div className="flex justify-between items-center px-8 py-4 border-b border-white/10">
-        <h1 className="text-2xl font-bold text-blue-400">RagChatAI</h1>
+    <div className="min-h-screen flex flex-col bg-[#0F172A] text-[#F1F5F9]">
+      {/* Top Navbar */}
+      <header className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#0F172A]">
+        <div
+          className="text-2xl font-extrabold text-blue-400 cursor-pointer"
+          onClick={() => router.push("/")}
+        >
+          RagChatAI
+        </div>
+
+        <div className="hidden md:flex space-x-2 bg-white text-black px-4 py-2 rounded-full shadow-md">
+          <Link href="#features">
+            <span className="px-4 py-1 rounded-md hover:bg-gray-200 transition font-medium cursor-pointer">
+              Features
+            </span>
+          </Link>
+          <Link href="#howitworks">
+            <span className="px-4 py-1 rounded-md hover:bg-gray-200 transition font-medium cursor-pointer">
+              How It Works
+            </span>
+          </Link>
+          <Link href="#pricing">
+            <span className="px-4 py-1 rounded-md hover:bg-gray-200 transition font-medium cursor-pointer">
+              Pricing
+            </span>
+          </Link>
+          <Link href="#faq">
+            <span className="px-4 py-1 rounded-md hover:bg-gray-200 transition font-medium cursor-pointer">
+              FAQ
+            </span>
+          </Link>
+        </div>
+
         {!isAuthenticated && (
           <div className="space-x-4">
             <Link href="/auth/login">
-              <button className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 transition">
+              <button className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 transition text-white">
                 Login
               </button>
             </Link>
@@ -38,60 +65,47 @@ export default function Landing() {
             </Link>
           </div>
         )}
-      </div>
+      </header>
 
-      {/* 🧭 MIDDLE NAVIGATION */}
-      <div className="flex justify-center mt-6">
-        <div className="flex space-x-6 px-6 py-2 rounded-full bg-[#111827] shadow-sm border border-gray-700 text-sm">
-          <a href="#features" className="hover:text-blue-400 transition duration-150">Features</a>
-          <a href="#howitworks" className="hover:text-blue-400 transition duration-150">How It Works</a>
-          <a href="#pricing" className="hover:text-blue-400 transition duration-150">Pricing</a>
-          <a href="#faq" className="hover:text-blue-400 transition duration-150">FAQ</a>
-        </div>
-      </div>
-
-      {/* 🧠 HERO SECTION */}
-      <header className="relative isolate py-20 text-center px-6">
-        <div className="absolute -z-10 inset-0 bg-gradient-to-b from-white/5 via-primary/10 to-transparent" />
-        <h1 className="text-4xl md:text-5xl font-extrabold mx-auto max-w-4xl text-primary">
+      {/* Hero */}
+      <section className="relative text-center py-24 px-6">
+        <h2 className="text-4xl md:text-5xl font-extrabold max-w-4xl mx-auto text-blue-200">
           Chat instantly with the content of{" "}
-          <span className="text-accent">any website</span>
-        </h1>
-        <p className="mt-6 mx-auto max-w-2xl text-lg text-gray-300">
-          RagChatAI is your intelligent assistant for web-based content...
-        </p>
-        <p className="mt-3 mx-auto max-w-xl text-gray-400 text-sm">
-          Whether it’s a blog, documentation, help center, or legal document...
+          <span className="text-blue-500">any website</span>
+        </h2>
+        <p className="mt-6 max-w-2xl mx-auto text-lg text-gray-300">
+          RagChatAI is your intelligent assistant for web-based content…
         </p>
         <button
           onClick={() =>
-            router.push(isAuthenticated ? "/chat" : "/auth/signup")
+            router.push(isAuthenticated ? "/dashboard" : "/auth/signup")
           }
-          className="cursor-pointer mt-8 inline-block rounded-full px-8 py-3 font-semibold text-black bg-white hover:bg-gray-200 transition ring-1 ring-white/20 shadow-lg"
+          className="mt-8 inline-block rounded-full px-8 py-3 font-semibold text-black bg-white hover:bg-gray-200 transition ring-1 ring-white/20 shadow-lg"
         >
-          {isAuthenticated ? "Go to Chat →" : "Start Now →"}
+          {isAuthenticated ? "Go to Dashboard →" : "Start Chat Now →"}
         </button>
-      </header>
+      </section>
 
-      {/* 🔸 SECTION LINKS */}
-      <div id="features">
+      {/* Page Sections */}
+      <section id="features" className="py-16 px-4">
         <FeatureSection />
-      </div>
-      <div id="howitworks">
+      </section>
+      <section id="howitworks" className="py-16 px-4 bg-[#111C2E]">
         <HowItWorks />
-      </div>
-      <div id="pricing">
+      </section>
+      <section id="pricing" className="py-16 px-4">
         <PricingSection />
-      </div>
-      <div id="faq">
+      </section>
+      <section id="faq" className="py-16 px-4 bg-[#111C2E]">
         <FAQSection />
-      </div>
+      </section>
+      <section className="py-16 px-4">
+        <TestimonialGrid />
+      </section>
 
-      <TestimonialGrid />
-
-      {/* 🔻 FOOTER */}
-      <footer className="mt-24 border-t border-white/10 py-8 text-center text-xs text-gray-400">
-        © {new Date().getFullYear()} RagChatAI &bull; Built with ❤️
+      {/* Footer */}
+      <footer className="border-t border-white/10 py-8 text-center text-sm text-gray-500">
+        © {new Date().getFullYear()} RagChatAI • Built with ❤️
       </footer>
     </div>
   );

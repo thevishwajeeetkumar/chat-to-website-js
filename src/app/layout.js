@@ -2,7 +2,6 @@
 
 import Providers from "./components/Providers"; // ✅ Ensure this path is correct
 import "./globals.css";
-import Navbar from "./components/Navbar";
 
 export const metadata = {
   title: "RagChat",

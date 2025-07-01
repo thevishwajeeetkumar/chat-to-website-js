@@ -1,27 +1,33 @@
-import { ragChat } from "@/lib/ragchat"; // ✅ make sure this path is correct
+// src/app/api/chat-stream/route.js
+
+import { ragChat } from "../../../lib/ragchat";
 
 export async function POST(req) {
   try {
     const { sessionId, prompt } = await req.json();
 
-    const question = typeof prompt === "string" ? prompt.trim() : "";
+    const sid = String(sessionId || "").trim();
+    const question = String(prompt || "").trim();
 
-    if (!question || !sessionId) {
-      return new Response("Missing prompt or sessionId", { status: 400 });
+    if (!sid || !question) {
+      return new Response("Missing sessionId or prompt", { status: 400 });
     }
 
-    const stream = await ragChat.stream({
-      sessionId,
-      question,
-    });
+    // ▶ Use positional args: sessionId, question
+    const res = await ragChat.chat(sid, question);
 
-    return new Response(stream, {
-      headers: {
-        "Content-Type": "text/event-stream",
-      },
-    });
+    return new Response(
+      JSON.stringify({
+        answer: res.answer,
+        sources: res.sources || [],
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   } catch (err) {
-    console.error("❌ Server error in chat-stream route:", err);
+    console.error("❌ chat-stream error:", err);
     return new Response("Internal Server Error", { status: 500 });
   }
 }
