@@ -6,55 +6,42 @@ import { redis } from "../../../lib/redis";
 import { verifyAccess } from "../../../lib/jwt";
 
 export async function GET() {
-  // 1️⃣ Extract token
-  const cookie= await cookies();
-  const token = cookie.get("accessToken")?.value;
+  // 1️⃣ Read the cookie
+  const cookieStore = await cookies();
+  const token = cookieStore.get("accessToken")?.value;
   if (!token) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // 2️⃣ Verify token
+  // 2️⃣ Verify the token (throws if invalid)
   let user;
   try {
-    user = await verifyAccess(token);
+    user = verifyAccess(token);
   } catch {
     return NextResponse.json({ error: "Invalid token" }, { status: 403 });
   }
 
-  // 3️⃣ Fetch up to 5 recent items
-  const rawHistory = await redis.lrange(`history:${user.userId}`, 0, 4);
-  let history = rawHistory.map((entry) => {
-    try {
-      return JSON.parse(entry);
-    } catch {
-      return { url: entry };
-    }
-  });
+  // 3️⃣ Fetch the last 5 URLs
+  let history = await redis.lrange(`history:${user.userId}`, 0, 4);
 
-  // 4️⃣ If fewer than 5, fill with recommendations
+  // 4️⃣ If fewer than 5, pad with recommendations
   const RECOMMENDED = [
     "https://vercel.com",
     "https://nextjs.org",
     "https://openai.com",
     "https://github.com",
-    "https://tailwindcss.com"
+    "https://tailwindcss.com",
   ];
-
   if (history.length < 5) {
-    // Extract URLs already present
-    const seen = new Set(history.map((h) => h.url));
-    // Filter recommended to exclude seen, then take as many as needed
-    const toAdd = RECOMMENDED
-      .filter((url) => !seen.has(url))
-      .slice(0, 5 - history.length)
-      .map((url) => ({ url }));
-    history = history.concat(toAdd);
+    const seen = new Set(history);
+    const extras = RECOMMENDED.filter((u) => !seen.has(u)).slice(0, 5 - history.length);
+    history = history.concat(extras);
   }
 
-  // 5️⃣ Return result
+  // 5️⃣ Return as JSON
   return NextResponse.json({
     email: user.email,
     userId: user.userId,
-    history,
+    history: history.map((u) => ({ url: u })),
   });
 }

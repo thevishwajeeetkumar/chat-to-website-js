@@ -7,65 +7,60 @@ import { ragChat } from "../../lib/ragchat";
 import { redis } from "../../lib/redis";
 import ChatWrapper from "../components/ChatWrapper";
 
-// Helper to rebuild and decode the URL
-function reconstructUrl(urlParam) {
-  const segments = Array.isArray(urlParam) ? urlParam : [urlParam];
-  return segments.map(decodeURIComponent).join("/");
+// Helper to rebuild the decoded URL from catch-all params
+function reconstructUrl(param) {
+  const segs = Array.isArray(param) ? param : [param];
+  return segs.map(decodeURIComponent).join("/");
 }
 
 export default async function Page({ params }) {
-  // 1️⃣ Await params before using
+  // 1️⃣ Await params before destructuring
   const { url: rawParam } = await params;
   const decodedUrl = reconstructUrl(rawParam);
 
-  // 2️⃣ Await cookies() before using
+  // 2️⃣ Authenticate user
   const cookieStore = await cookies();
   const token = cookieStore.get("accessToken")?.value;
-  const user = token ? await verifyAccess(token) : null;
-  if (!user) {
-    redirect("/auth/login");
+  let user;
+  try {
+    user = token ? verifyAccess(token) : null;
+  } catch {
+    return redirect("/auth/login");
   }
+  if (!user) redirect("/auth/login");
 
-  // 3️⃣ Build a session ID unique per user + URL
   const userId = user.userId;
   const sessionId = `${userId}--${decodedUrl}`.replace(/\W/g, "");
 
-  // 4️⃣ Index the URL in RAG context if not already done
-  const alreadyIndexed = await redis.sismember("indexed-urls", decodedUrl);
-  if (!alreadyIndexed) {
+  // 3️⃣ Index the page on first visit
+  const already = await redis.sismember("indexed-urls", decodedUrl);
+  if (!already) {
     try {
       await ragChat.context.add({
         type: "html",
         source: decodedUrl,
-        config: {
-          chunkSize: 800,      // fewer, larger chunks
-          chunkOverlap: 200,   // increased overlap
-        },
       });
       await redis.sadd("indexed-urls", decodedUrl);
-    } catch (err) {
-      console.error("Indexing error (skipped):", err);
+    } catch (e) {
+      console.error("Indexing skipped:", e);
     }
   }
 
-  // 5️⃣ Save to user history (keep only last 5)
+  // 4️⃣ Save URL to history (keep last 5)
   await redis.lpush(`history:${userId}`, decodedUrl);
   await redis.ltrim(`history:${userId}`, 0, 4);
 
-  // 6️⃣ Load any existing messages for this session
-  const rawMessages = await redis.lrange(`messages:${sessionId}`, 0, 9);
-  const initialMessages = rawMessages
-    .map((msgStr) => {
-      try {
-        return JSON.parse(msgStr);
-      } catch {
-        return null;
-      }
+  // 5️⃣ Load existing messages
+  const rawMsgs = await redis.lrange(`messages:${sessionId}`, 0, 9);
+  const initialMessages = rawMsgs
+    .map((s) => {
+      try { return JSON.parse(s); }
+      catch { return null; }
     })
     .filter(Boolean)
     .reverse();
 
-  // 7️⃣ Render the client-side ChatWrapper with props
+  // 6️⃣ Render the Chat UI
   return (
     <ChatWrapper
       sessionId={sessionId}
